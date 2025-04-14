@@ -14,6 +14,6 @@ contract Token is ERC20 {
     )
         ERC20(name, symbol)
     {
-        _mint(recipient, initialSupply * 10 ** decimals());
+        _mint(recipient, initialSupply);
     }
 }
