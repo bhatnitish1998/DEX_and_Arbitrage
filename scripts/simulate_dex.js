@@ -32,7 +32,7 @@ async function interactWithDEX() {
         const tokenA = await Token.deploy({
             data: TOKEN_BYTECODE,
             arguments: ["TokenA", "TKA", 30000 * decimals, token_owner]
-        }).send({ from: token_owner});
+        }).send({ from: token_owner,gas: 10000000000000});
         console.log("TokenA deployed at:", tokenA.options.address);
         
 
@@ -40,7 +40,7 @@ async function interactWithDEX() {
         const tokenB = await Token.deploy({
             data: TOKEN_BYTECODE,
             arguments: ["TokenB", "TKB", 30000 * decimals, token_owner]
-        }).send({ from: token_owner});
+        }).send({ from: token_owner,gas: 100000000000});
         console.log("TokenB deployed at:", tokenB.options.address);
 
 
@@ -64,7 +64,7 @@ async function interactWithDEX() {
         const dex1 = await DEX.deploy({
             data: DEX_BYTECODE,
             arguments: [tokenA.options.address, tokenB.options.address,]
-        }).send({ from: dex_one_owner});
+        }).send({ from: dex_one_owner, gas: 100000000000});
         console.log("DEX deployed at:", dex1.options.address);
 
         // 3. Approve the DEX contract for each user.
@@ -76,9 +76,7 @@ async function interactWithDEX() {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        await dex1.methods.addLiquidity(100 * decimals, 200 * decimals).send({from: lpAccounts[0]});
-        await dex1.methods.addLiquidity(50 * decimals, 100 * decimals).send({ from: lpAccounts[1]});
-        await dex1.methods.addLiquidity(1000 * decimals, 2000 * decimals).send({from: lpAccounts[2]});
+        await dex1.methods.addLiquidity(2000 * decimals, 1000 * decimals).send({from: lpAccounts[2]});
 
         value = await dex1.methods.totalLPTokens().call()
         console.log("value",value)
@@ -89,7 +87,23 @@ async function interactWithDEX() {
         value = await dex1.methods.totalLPTokens().call()
         console.log("value",value)
 
-        console.log("finished")
+        value = await dex1.methods.getValueofA().call()
+        console.log(value/decimals);
+        value = await dex1.methods.getValueofB().call()
+        console.log(value/decimals);
+
+
+        value = await dex1.methods.swapB(10 * decimals).call({from: traderAccounts[0]});
+        await dex1.methods.swapB(10 * decimals).send({from: traderAccounts[0]});
+        actual = value[0]/decimals;
+        expected = value[1]/decimals;
+        slippage = ((expected-actual)/expected)*100;
+
+        console.log("Amount B", actual);
+        console.log("Slippage", slippage);
+
+
+        console.log("finished");
 
     } 
         catch (error) {

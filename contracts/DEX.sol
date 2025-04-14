@@ -40,7 +40,6 @@ contract DEX {
     lpToken = new LPToken("Liquidity Provider Token", "LPT", address(this));
     }
 
-
     // LIQUIDITY FUNCTIONS
 
     function addLiquidity(uint amountA, uint amountB) public {
@@ -112,6 +111,68 @@ contract DEX {
             tokenA.safeTransfer(msg.sender, amountA);
             tokenB.safeTransfer(msg.sender, amountB);
 
+    }
+
+
+    function swapA(uint256 amountAIn) public returns (uint,uint) {
+
+        require(amountAIn <= (tokenA.balanceOf(address(this))/10 ) );
+        // subtract the fees
+        uint fees = (amountAIn * FEE_NUMERATOR)/ FEE_DENOMINATOR;
+        uint amountA = amountAIn - fees;
+
+        uint k = tokenA.balanceOf(address(this)) * tokenB.balanceOf(address(this));
+        // ( x + a ) ( y - b ) = k
+        //  b = y-k/(x+a)
+        uint amountB =  tokenB.balanceOf(address(this)) - (k / ( tokenA.balanceOf(address(this)) + amountA));
+        
+        // Compute expected
+        uint expectedB = (amountA *  tokenB.balanceOf(address(this))) /  tokenA.balanceOf(address(this));
+        
+        // Do the actual transfer
+        tokenA.safeTransferFrom(msg.sender, address(this), amountA);
+        tokenB.safeTransfer(msg.sender, amountB);
+
+        return (amountB,expectedB);
+    }
+
+
+    function swapB(uint256 amountBIn) public returns (uint,uint) {
+
+        require(amountBIn <= (tokenB.balanceOf(address(this))/10 ) );
+        // subtract the fees
+        uint fees = (amountBIn * FEE_NUMERATOR)/ FEE_DENOMINATOR;
+        uint amountB = amountBIn - fees;
+
+        uint k = tokenA.balanceOf(address(this)) * tokenB.balanceOf(address(this));
+        // ( x + a ) ( y - b ) = k
+        //  b = y-k/(x+a)
+        uint amountA =  tokenA.balanceOf(address(this)) - (k / ( tokenB.balanceOf(address(this)) + amountB));
+        
+        // Compute expected
+        uint expectedA = (amountB *  tokenA.balanceOf(address(this))) /  tokenB.balanceOf(address(this));
+        
+        // Do the actual transfer
+        tokenB.safeTransferFrom(msg.sender, address(this), amountB);
+        tokenA.safeTransfer(msg.sender, amountA);
+
+        return (amountA,expectedA);
+    }
+
+        // Read only functions
+    function getReserves() public view returns (uint, uint)
+    {
+        return (tokenA.balanceOf(address(this)),tokenB.balanceOf(address(this)));
+    } 
+
+    function getValueofA() public view returns (uint)
+    {
+        return ((tokenB.balanceOf(address(this)) * 10 ** 10 )/  tokenA.balanceOf(address(this)));
+    }
+
+    function getValueofB() public view returns (uint)
+    {
+        return ((tokenA.balanceOf(address(this)) * 10 ** 10) /  tokenB.balanceOf(address(this)));
     }
 
 
