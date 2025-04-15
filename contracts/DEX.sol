@@ -24,8 +24,10 @@ contract DEX {
     uint public totalLPTokens;
 
     // store fees to later distribute to LP
-    uint private totalFeesA;
-    uint private totalFeesB;
+    uint public totalFeesA;
+    uint public totalFeesB;
+    uint public totalSwapVolumeA;
+    uint public totalSwapVolumeB;
 
     uint private constant FEE_NUMERATOR = 3;
     uint private constant FEE_DENOMINATOR = 1000;
@@ -132,8 +134,11 @@ contract DEX {
         // Do the actual transfer
         tokenA.safeTransferFrom(msg.sender, address(this), amountA);
         tokenB.safeTransfer(msg.sender, amountB);
+        
+        totalSwapVolumeA += amountAIn;
+        totalFeesA += fees;
 
-        return (amountB,expectedB);
+        return (amountB, expectedB);
     }
 
 
@@ -156,6 +161,9 @@ contract DEX {
         tokenB.safeTransferFrom(msg.sender, address(this), amountB);
         tokenA.safeTransfer(msg.sender, amountA);
 
+        totalSwapVolumeB += amountBIn;
+        totalFeesB += fees;
+
         return (amountA,expectedA);
     }
 
@@ -174,6 +182,16 @@ contract DEX {
     {
         return ((tokenA.balanceOf(address(this)) * 10 ** 10) /  tokenB.balanceOf(address(this)));
     }
+    function getTotalFees() public view returns (uint, uint) {
+        return (totalFeesA, totalFeesB);
+    }
 
+    function getTotalSwapVolume() public view returns (uint, uint) {
+        return (totalSwapVolumeA, totalSwapVolumeB);
+    }
+
+    function getLPBalance(address user) public view returns (uint) {
+        return LPS[user];
+    }
 
 }
