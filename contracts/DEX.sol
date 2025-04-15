@@ -61,18 +61,14 @@ contract DEX {
             lpList.push(msg.sender);
             
 
-
         } else {
             // For subsequent liquidity providers we maintain the same ratio as the current reserve.
 
             // Calculate the expected amountB based on the amountA provided.
             uint expectedAmountB = (amountA * tokenB.balanceOf(address(this))) / tokenA.balanceOf(address(this));
-            require(
-                amountB == expectedAmountB,
-                "Liquidity must be provided in the correct ratio"
-            );
-
-            // LPTOKEN calculation
+            
+            require(tokenB.balanceOf(msg.sender) >= expectedAmountB, "Insufficient B balance to add liquidity");
+            amountB = expectedAmountB;
 
 
             // Update the reserves with the new liquidity.

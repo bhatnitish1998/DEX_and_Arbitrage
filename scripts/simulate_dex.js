@@ -134,7 +134,7 @@ async function interactWithDEX() {
             // Randomly choose a transaction type
             // 0 = deposit liquidity, 1 = withdraw liquidity, 2 = swap
             // const txType = Math.floor(Math.random() * 3);
-            const txType = Math.floor(Math.random() * 2);
+            const txType = Math.floor(Math.random() * 3);
             metric.txn = txType;
             
 
@@ -176,13 +176,13 @@ async function interactWithDEX() {
 
                 console.log("fraction",fraction, "\tratio: ", ratio)
 
-                const depositA = maxDeposit * fraction;
+                const depositA = Math.floor(maxDeposit * fraction);
                 const depositB = depositA * ratio;
 
 
-                console.log(`LP ${account} depositing: TokenA ${depositA }, TokenB ${depositB }`);
+                console.log(`LP ${account} depositing: TokenA ${depositA }, TokenB ${1}`);
                 try {
-                    await dex1.methods.addLiquidity(depositA, depositB).send({ from: account });
+                    await dex1.methods.addLiquidity(depositA, 1).send({ from: account });
                     console.log("Deposit successful.");
                 } catch (e) {
                     console.error("Deposit failed:", e.message);
