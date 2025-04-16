@@ -110,8 +110,8 @@ async function interactWithArbit() {
 
 
         // Parameter
-        const thresh = 2 * decimals;  
-        const max_trades = 20;        
+        const thresh = 5 * decimals;  
+        const max_trades = 100;        
         
         
         let continueTrading = true;
@@ -122,126 +122,126 @@ async function interactWithArbit() {
             cnt++;
 
             console.log(`\niter: ${cnt}`)
-            if (cnt == max_trades)
-                break;
+                if (cnt == max_trades)
+                    break;
 
-            let result, type_of_trade, balanceA, balanceB;
-            balanceA = await tokenA.methods.balanceOf(primary_trader).call()
-            balanceB = await tokenB.methods.balanceOf(primary_trader).call()
+                let result, type_of_trade, balanceA, balanceB;
+                balanceA = await tokenA.methods.balanceOf(primary_trader).call()
+                balanceB = await tokenB.methods.balanceOf(primary_trader).call()
 
             if(tokenA.methods.balanceOf(primary_trader).call() > tokenB.methods.balanceOf(primary_trader).call())
-            {
-                result = await arbit.methods.checkOpportunityABA(balanceA, thresh).call({ from: primary_trader });
-                await arbit.methods.checkOpportunityABA(balanceA, thresh).send({ from: primary_trader });
-                type_of_trade = "ABA"
-                console.log ("ABA");
+                    {
+                        result = await arbit.methods.checkOpportunityABA(balanceA, thresh).call({ from: primary_trader });
+                        await arbit.methods.checkOpportunityABA(balanceA, thresh).send({ from: primary_trader });
+                        type_of_trade = "ABA"
+                        console.log ("ABA");
 
-            }
-            else 
-            {
-                result = await arbit.methods.checkOpportunityBAB(balanceB, thresh).call({ from: primary_trader });
-                await arbit.methods.checkOpportunityABA(balanceA, thresh).send({ from: primary_trader });
-                type_of_trade = "BAB"
-                console.log ("BAB");
-                
-            }
+                    }
+                    else 
+                    {
+                        result = await arbit.methods.checkOpportunityBAB(balanceB, thresh).call({ from: primary_trader });
+                        await arbit.methods.checkOpportunityABA(balanceA, thresh).send({ from: primary_trader });
+                        type_of_trade = "BAB"
+                        console.log ("BAB");
+                        
+                }
 
             let direction = result[0];
-            let tradeAmount = result[1];
+                let tradeAmount = result[1];
 
-            if( direction ==0)
-                {
-                    console.log("Profit is below threshold. Exiting loop.");
-                    break;
-                }
- 
-            if (type_of_trade === "ABA") {
+                if( direction ==0)
+                    {
+                        console.log("Profit is below threshold. Exiting loop.");
+                        break;
+                    }
+    
+                if (type_of_trade === "ABA") {
 
-                try {
-                if(direction == 1){
-                // Execute the first swap
-                const amounts1 = await dex1.methods.swapA(tradeAmount).call({ from: primary_trader });
-                await dex1.methods.swapA(tradeAmount).send({ from: primary_trader });
-                
-                const amountB = Number(amounts1[0]);
-
-
-                // Execute the second swap using the output from the first
-                const amounts2 = await dex2.methods.swapB(amountB).call({ from: primary_trader });
-                await dex2.methods.swapB(amountB).send({ from: primary_trader});
-
-                const finalAmountA = Number(amounts2[0]);
-                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountA/decimals}  ` );
-                console.log(`profit: ${(finalAmountA - tradeAmount)/decimals}  profit per token:${(finalAmountA - tradeAmount)/ tradeAmount}  ` );
-                }
-
-                else if(direction == 2)
-                {
+                    try {
+                    if(direction == 1){
                     // Execute the first swap
-                const amounts1 = await dex2.methods.swapA(tradeAmount).call({ from: primary_trader });
-                await dex2.methods.swapA(tradeAmount).send({ from: primary_trader });
-                
-                const amountB = Number(amounts1[0]);
-
-                // Execute the second swap using the output from the first
-                const amounts2 = await dex1.methods.swapB(amountB).call({ from: primary_trader });
-                await dex1.methods.swapB(amountB).send({ from: primary_trader });
-
-                const finalAmountA = Number(amounts2[0]);
-
-                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountA/decimals}  ` );
-                console.log(`profit: ${(finalAmountA - tradeAmount)/decimals}  profit per token:${(finalAmountA - tradeAmount)/ tradeAmount}  ` );
-                }
+                    const amounts1 = await dex1.methods.swapA(tradeAmount).call({ from: primary_trader });
+                    await dex1.methods.swapA(tradeAmount).send({ from: primary_trader });
+                    
+                    const amountB = Number(amounts1[0]);
 
 
-                }
-                catch (e) {
-                console.error("Swap chain failed:", e.message);
-                }              
-                
-            } else if (type_of_trade === "BAB") {
-                try {
+                    // Execute the second swap using the output from the first
+                    const amounts2 = await dex2.methods.swapB(amountB).call({ from: primary_trader });
+                    await dex2.methods.swapB(amountB).send({ from: primary_trader});
 
-                if(direction == 1)
-                {
-                // Execute the first swap
-                const amounts1 = await dex1.methods.swapB(tradeAmount).call({ from: primary_trader });
-                await dex1.methods.swapB(tradeAmount).send({ from: primary_trader });
-                const amountA = Number(amounts1[0]);
+                    const finalAmountA = Number(amounts2[0]);
+                    console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountA/decimals}  ` );
+                    console.log(`profit: ${(finalAmountA - tradeAmount)/decimals}  profit per token:${(finalAmountA - tradeAmount)/ tradeAmount}  ` );
+                    }
+
+                    else if(direction == 2)
+                    {
+                        // Execute the first swap
+                    const amounts1 = await dex2.methods.swapA(tradeAmount).call({ from: primary_trader });
+                    await dex2.methods.swapA(tradeAmount).send({ from: primary_trader });
+                    
+                    const amountB = Number(amounts1[0]);
+
+                    // Execute the second swap using the output from the first
+                    const amounts2 = await dex1.methods.swapB(amountB).call({ from: primary_trader });
+                    await dex1.methods.swapB(amountB).send({ from: primary_trader });
+
+                    const finalAmountA = Number(amounts2[0]);
+
+                    console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountA/decimals}  ` );
+                    console.log(`profit: ${(finalAmountA - tradeAmount)/decimals}  profit per token:${(finalAmountA - tradeAmount)/ tradeAmount}  ` );
+                    }
 
 
-                // Execute the second swap using the output from the first
-                const amounts2 = await dex2.methods.swapA(amountA).call({ from: primary_trader });
-                await dex2.methods.swapA(amountA).send({ from: primary_trader });
-                const finalAmountB = Number(amounts2[0]);
+                    }
+                    catch (e) {
+                    console.error("Swap chain failed:", e.message);
+                    }              
+                    
+                } else if (type_of_trade === "BAB") {
+                    try {
 
-                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountB/decimals}  ` );
-                console.log(`profit: ${(finalAmountB - tradeAmount)/decimals}  profit per token:${(finalAmountB - tradeAmount)/ tradeAmount}  ` );
-
-                }
-
-                else if(direction == 2)
-
-                {
-
+                    if(direction == 1)
+                    {
                     // Execute the first swap
-                const amounts1 = await dex2.methods.swapB(tradeAmount).call({ from: primary_trader });
-                await dex2.methods.swapB(tradeAmount).send({ from: primary_trader });
-                const amountA = Number(amounts1[0]);
+                    const amounts1 = await dex1.methods.swapB(tradeAmount).call({ from: primary_trader });
+                    await dex1.methods.swapB(tradeAmount).send({ from: primary_trader });
+                    const amountA = Number(amounts1[0]);
 
-                // Execute the second swap using the output from the first
-                const amounts2 = await dex1.methods.swapA(amountA).call({ from: primary_trader });
-                dex1.methods.swapA(amountA).send({ from: primary_trader });
-                const finalAmountB = Number(amounts2[0]);
 
-                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountB/decimals}  ` );
-                console.log(`profit: ${(finalAmountB - tradeAmount)/decimals}  profit per token:${(finalAmountB- tradeAmount)/ tradeAmount}  ` );
+                    // Execute the second swap using the output from the first
+                    const amounts2 = await dex2.methods.swapA(amountA).call({ from: primary_trader });
+                    await dex2.methods.swapA(amountA).send({ from: primary_trader });
+                    const finalAmountB = Number(amounts2[0]);
 
-                }
+                    console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountB/decimals}  ` );
+                    console.log(`profit: ${(finalAmountB - tradeAmount)/decimals}  profit per token:${(finalAmountB - tradeAmount)/ tradeAmount}  ` );
 
-                } catch (e) {
-                console.error("Swap chain failed:", e.message);
-                }
+                    }
+
+                    else if(direction == 2)
+
+                    {
+
+                        // Execute the first swap
+                    const amounts1 = await dex2.methods.swapB(tradeAmount).call({ from: primary_trader });
+                    await dex2.methods.swapB(tradeAmount).send({ from: primary_trader });
+                    const amountA = Number(amounts1[0]);
+
+                    // Execute the second swap using the output from the first
+                    const amounts2 = await dex1.methods.swapA(amountA).call({ from: primary_trader });
+                    dex1.methods.swapA(amountA).send({ from: primary_trader });
+                    const finalAmountB = Number(amounts2[0]);
+
+                    console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountB/decimals}  ` );
+                    console.log(`profit: ${(finalAmountB - tradeAmount)/decimals}  profit per token:${(finalAmountB- tradeAmount)/ tradeAmount}  ` );
+
+                    }
+
+                    } catch (e) {
+                    console.error("Swap chain failed:", e.message);
+                    }
             }
             
         }
