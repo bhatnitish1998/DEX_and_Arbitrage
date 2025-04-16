@@ -120,16 +120,27 @@ async function interactWithArbit() {
 
         while (continueTrading) {
             cnt++;
+            let direction = 0;
 
             console.log(`\niter: ${cnt}`)
+            try {
+                
                 if (cnt == max_trades)
                     break;
 
                 let result, type_of_trade, balanceA, balanceB;
+                try{
+
                 balanceA = await tokenA.methods.balanceOf(primary_trader).call()
                 balanceB = await tokenB.methods.balanceOf(primary_trader).call()
+                }
+                catch (e){
+                    console.error("error fetching balance: ", e.message);
+                }
 
-            if(tokenA.methods.balanceOf(primary_trader).call() > tokenB.methods.balanceOf(primary_trader).call())
+
+                try{
+                    if(balanceA > balanceB)
                     {
                         result = await arbit.methods.checkOpportunityABA(balanceA, thresh).call({ from: primary_trader });
                         await arbit.methods.checkOpportunityABA(balanceA, thresh).send({ from: primary_trader });
@@ -144,9 +155,13 @@ async function interactWithArbit() {
                         type_of_trade = "BAB"
                         console.log ("BAB");
                         
+                    }
+                }
+                catch (e) {
+                    console.log(" " )
                 }
 
-            let direction = result[0];
+                direction = result[0];
                 let tradeAmount = result[1];
 
                 if( direction ==0)
@@ -242,6 +257,11 @@ async function interactWithArbit() {
                     } catch (e) {
                     console.error("Swap chain failed:", e.message);
                     }
+                }
+            }
+            catch (e) {
+                console.log('Profit < Threshold. Exiting...');
+                break;
             }
             
         }

@@ -26,8 +26,13 @@ contract Arbitrage{
         uint max_can_trade = amountA < max_possible ? amountA : max_possible;
         max_can_trade = max_can_trade < (RA1 / 10 ) ? max_can_trade : (RA1/10); 
 
-        for(uint i = 1 * 10**10 ; i <= max_can_trade ; i = i + 10**10)
+        uint cnt = 0;
+        for(uint i = 1 * 10**10 ; i <= 100 * 10**10 ; i = i + 10**10)
         {
+            cnt++;
+            if (cnt == 100){
+                break;
+            }
 
             uint fees = (i * 3)/1000;
             uint actual_i = i - fees;
@@ -49,8 +54,7 @@ contract Arbitrage{
 
             return (true,i);
         }
-
-            return(false,0);
+        return(false,0);
     }
 
 
@@ -64,12 +68,17 @@ contract Arbitrage{
         
         // uint max_possible = ((RA2 * RB1) - (RA1 * RB2))/(RA1 + RA2);
         uint max_possible = ((RA1 * RB2)-(RA2 * RB1))/(RA1 + RA2);
-        uint max_can_trade = amountB < max_possible ? amountB : max_possible;
-        max_can_trade = max_can_trade < (RB1 / 10 ) ? max_can_trade : (RB1/10); 
+        uint max_can_trade = 100 * 10**10; // amountB < max_possible ? amountB : max_possible;
+        max_can_trade = max_can_trade < (RB1 / 10 ) ? max_can_trade : (RB1/10);
+
+        uint cnt = 0; 
 
         for(uint i = 1* 10**10 ; i <= max_can_trade ; i = i + 10**10)
         {
-
+            cnt++;
+            if (cnt == 100){
+                break;
+            }
             uint fees = (i * 3)/1000;
             uint actual_i = i - fees;
             uint k = RA1 * RB1;
