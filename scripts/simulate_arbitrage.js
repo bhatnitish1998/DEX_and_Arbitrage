@@ -109,12 +109,95 @@ async function interactWithArbit() {
 
 
         value = await arbit.methods.checkOpportunityBAB(100*decimals,4*decimals).call({from: traderAccounts[0]});
+        console.log("BAB:")
+        console.log(value[0],value[1]/decimals);
+
+        value = await arbit.methods.checkOpportunityABA(100*decimals,4*decimals).call({from: traderAccounts[0]});
+        console.log("ABA:")
         console.log(value[0],value[1]/decimals);
 
 
         // 1. Fix threshold
         // 2. Do the actual swap based on direction
         // 3. Put it in the loop to do trades until profit < threshold 
+        const thresh = 1 * decimals;  
+        let continueTrading = true;
+        let cnt = 0;
+
+        while (continueTrading) {
+            cnt++;
+            console.log(`\niter: ${cnt}`)
+            if (cnt == 10)
+                break
+            let resultABA = await arbit.methods.checkOpportunityABA(100 * decimals, thresh).call({ from: traderAccounts[0] });
+            let resultBAB = await arbit.methods.checkOpportunityBAB(100 * decimals, thresh).call({ from: traderAccounts[0] });
+
+            let direction, tradeAmount;
+            
+            if (resultABA[0] != 0 && resultABA[1] > 0) {
+                direction = "ABA";
+                tradeAmount = resultABA[1];
+
+            } else if (resultBAB[0] != 0 && resultBAB[1] > 0) {
+                direction = "BAB";
+                tradeAmount = resultBAB[1];
+            } else {
+                console.log("No profitable arbitrage opportunity available.");
+                break;
+            }
+            // tradeAmount = tradeAmount / decimals;
+            console.log(`executing ${direction} trade for amount:`, tradeAmount);
+
+            // const account = traderAccounts[0];
+            if (direction === "ABA") {
+                try {
+                // Execute the first swap
+                const amounts1 = await dex1.methods.swapA(tradeAmount).call({ from: traderAccounts[0] });
+                await dex1.methods.swapA(tradeAmount).send({ from: traderAccounts[0] });
+                
+                const amountB = Number(amounts1[0]);
+                console.log("Swap on dex1 successful. Received TokenB amount:", amountB);
+
+                // Execute the second swap using the output from the first
+                const amounts2 = await dex2.methods.swapB(amountB).call({ from: traderAccounts[0] });
+                await dex2.methods.swapB(amountB).send({ from: traderAccounts[0] });
+
+                const finalAmountA = Number(amounts2[0]);
+                console.log(`Final amount A after dex2 swap: ${finalAmountA}`);
+                } catch (e) {
+                console.error("Swap chain failed:", e.message);
+                }             
+
+                
+
+            } else if (direction === "BAB") {
+                try {
+                // Execute the first swap
+                const amounts1 = await dex1.methods.swapB(tradeAmount).call({ from: traderAccounts[0] });
+                const amountA = Number(amounts1[0]);
+                console.log("Swap on dex1 successful. Received TokenA amount:", amountA);
+
+                // Execute the second swap using the output from the first
+                const amounts2 = await dex2.methods.swapA(amountA).call({ from: traderAccounts[0] });
+                const finalAmountB = Number(amounts2[0]);
+                console.log(`Final amount B after dex2 swap: ${finalAmountB}`);
+                } catch (e) {
+                console.error("Swap chain failed:", e.message);
+                }
+            }
+            
+            try{
+                let newOpportunity = await arbit.methods.checkOpportunityABA(100 * decimals, thresh).call({ from: traderAccounts[0] });
+                if (newOpportunity[0] == 0) {
+                    console.log("Profit is below threshold. Exiting loop.");
+                    continueTrading = false;
+                }
+            }
+            catch (e) {
+                console.error("newOpp failed, ", e.message)
+            }
+        }
+
 
         console.log("finished");
 
