@@ -7,6 +7,7 @@ contract Arbitrage{
 
     DEX public dex1;
     DEX public dex2;
+    uint threshold = 2 * 10**10;
 
     constructor(address _dex1, address _dex2) {
     dex1 = DEX(_dex1);
@@ -16,7 +17,7 @@ contract Arbitrage{
 
     // returns (True, amountA) if trade possible
     // returns (false, 0) if trade not possible
-    function ABA_helper (uint amountA, uint threshold, DEX dex_one, DEX dex_two) internal view returns (bool, uint)
+    function ABA_helper (uint amountA, DEX dex_one, DEX dex_two) internal view returns (bool, uint)
     {
         (uint RA1, uint RB1) = dex_one.getReserves();
         (uint RA2, uint RB2) = dex_two.getReserves();
@@ -42,7 +43,7 @@ contract Arbitrage{
             k = RA2 * RB2;
             uint received_A =  RA2 - (k / ( RB2 + actual_B));
         
-            if((received_A - i) < 1 * 10**10){
+            if((received_A - i) < threshold){
                 continue;
             }
 
@@ -56,7 +57,7 @@ contract Arbitrage{
 
     // returns (True, amountA) if trade possible
     // returns (false, 0) if trade not possible
-    function BAB_helper (uint amountB, uint threshold, DEX dex_one, DEX dex_two) internal view returns (bool, uint)
+    function BAB_helper (uint amountB, DEX dex_one, DEX dex_two) internal view returns (bool, uint)
     {
         (uint RA1, uint RB1) = dex_one.getReserves();
         (uint RA2, uint RB2) = dex_two.getReserves();
@@ -83,7 +84,7 @@ contract Arbitrage{
             k = RA2 * RB2;
             uint received_B =  RB2 - (k / ( RA2 + actual_A));
         
-            if((received_B - i) < 1 * 10**10){
+            if((received_B - i) < threshold){
                 continue;
             }
 
@@ -96,9 +97,10 @@ contract Arbitrage{
 
     // amountA trader has, threshold = Number of A tokens he needs as profit
     // returns profit
-    function checkOpportunityABA(uint amountA, uint threshold) public view returns (uint,uint)
+    function checkOpportunityABA(uint amountA, uint _threshold) public  returns (uint,uint)
     {
         uint direction = 0;
+        threshold = _threshold;
         // ABA = Buy B from cheaper and sell it to costlier
          uint BforA1 = dex1.getValueofA();
          uint BforA2 = dex2.getValueofA();
@@ -108,7 +110,7 @@ contract Arbitrage{
          {
             // Buy from 1 and Sell to 2
 
-            (bool flag, uint amount) = ABA_helper(amountA, threshold, dex1, dex2);
+            (bool flag, uint amount) = ABA_helper(amountA, dex1, dex2);
             if(flag)
             {
                 direction = 1;
@@ -120,7 +122,7 @@ contract Arbitrage{
          else if (BforA2 > BforA1)
          {
             // Buy from 2 and sell to 1
-            (bool flag, uint amount) = ABA_helper(amountA, threshold, dex2, dex1);
+            (bool flag, uint amount) = ABA_helper(amountA, dex2, dex1);
             if(flag)
             {
                 direction = 2;
@@ -136,8 +138,9 @@ contract Arbitrage{
 
     // amountB trader has, threshold = Number of B tokens he needs as profit
     // returns profit
-    function checkOpportunityBAB(uint amountB, uint threshold) public view returns (uint,uint)
+    function checkOpportunityBAB(uint amountB, uint _threshold) public  returns (uint,uint)
     {
+        threshold = _threshold;
         uint direction = 0;
         // ABA = Buy B from cheaper and sell it to costlier
          uint AforB1 = dex1.getValueofB();
@@ -148,7 +151,7 @@ contract Arbitrage{
          {
             // Buy from 1 and Sell to 2
 
-            (bool flag, uint amount) = BAB_helper(amountB, threshold, dex1, dex2);
+            (bool flag, uint amount) = BAB_helper(amountB, dex1, dex2);
             if(flag)
             {
                 direction = 1;
@@ -160,7 +163,7 @@ contract Arbitrage{
          else if (AforB2 > AforB1)
          {
             // Buy from 2 and sell to 1
-            (bool flag, uint amount) = BAB_helper(amountB, threshold, dex2, dex1);
+            (bool flag, uint amount) = BAB_helper(amountB, dex2, dex1);
             if(flag)
             {
                 direction = 2;

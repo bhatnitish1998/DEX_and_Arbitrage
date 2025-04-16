@@ -105,8 +105,8 @@ async function interactWithArbit() {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Initial Liquidity
-        await dex1.methods.addLiquidity(200 * decimals, 100 * decimals).send({from: lpAccounts[2]});
-        await dex2.methods.addLiquidity(300 * decimals, 100 * decimals).send({from: lpAccounts[3]});
+        await dex1.methods.addLiquidity(2000 * decimals, 1000 * decimals).send({from: lpAccounts[2]});
+        await dex2.methods.addLiquidity(3000 * decimals, 1000 * decimals).send({from: lpAccounts[3]});
 
 
         // Parameter
@@ -132,6 +132,7 @@ async function interactWithArbit() {
             if(tokenA.methods.balanceOf(primary_trader).call() > tokenB.methods.balanceOf(primary_trader).call())
             {
                 result = await arbit.methods.checkOpportunityABA(balanceA, thresh).call({ from: primary_trader });
+                await arbit.methods.checkOpportunityABA(balanceA, thresh).send({ from: primary_trader });
                 type_of_trade = "ABA"
                 console.log ("ABA");
 
@@ -139,6 +140,7 @@ async function interactWithArbit() {
             else 
             {
                 result = await arbit.methods.checkOpportunityBAB(balanceB, thresh).call({ from: primary_trader });
+                await arbit.methods.checkOpportunityABA(balanceA, thresh).send({ from: primary_trader });
                 type_of_trade = "BAB"
                 console.log ("BAB");
                 
@@ -162,14 +164,15 @@ async function interactWithArbit() {
                 await dex1.methods.swapA(tradeAmount).send({ from: primary_trader });
                 
                 const amountB = Number(amounts1[0]);
-                console.log("Swap on dex1 successful. Received TokenB amount:", amountB);
+
 
                 // Execute the second swap using the output from the first
                 const amounts2 = await dex2.methods.swapB(amountB).call({ from: primary_trader });
                 await dex2.methods.swapB(amountB).send({ from: primary_trader});
 
                 const finalAmountA = Number(amounts2[0]);
-                console.log(`Final amount A after dex2 swap: ${finalAmountA}`);
+                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountA/decimals}  ` );
+                console.log(`profit: ${(finalAmountA - tradeAmount)/decimals}  profit per token:${(finalAmountA - tradeAmount)/ tradeAmount}  ` );
                 }
 
                 else if(direction == 2)
@@ -179,14 +182,15 @@ async function interactWithArbit() {
                 await dex2.methods.swapA(tradeAmount).send({ from: primary_trader });
                 
                 const amountB = Number(amounts1[0]);
-                console.log("Swap on dex2 successful. Received TokenB amount:", amountB);
 
                 // Execute the second swap using the output from the first
                 const amounts2 = await dex1.methods.swapB(amountB).call({ from: primary_trader });
                 await dex1.methods.swapB(amountB).send({ from: primary_trader });
 
                 const finalAmountA = Number(amounts2[0]);
-                console.log(`Final amount A after dex1 swap: ${finalAmountA}`);
+
+                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountA/decimals}  ` );
+                console.log(`profit: ${(finalAmountA - tradeAmount)/decimals}  profit per token:${(finalAmountA - tradeAmount)/ tradeAmount}  ` );
                 }
 
 
@@ -198,22 +202,25 @@ async function interactWithArbit() {
             } else if (type_of_trade === "BAB") {
                 try {
 
-                if(direction = 1)
+                if(direction == 1)
                 {
                 // Execute the first swap
                 const amounts1 = await dex1.methods.swapB(tradeAmount).call({ from: primary_trader });
                 await dex1.methods.swapB(tradeAmount).send({ from: primary_trader });
                 const amountA = Number(amounts1[0]);
-                console.log("Swap on dex1 successful. Received TokenA amount:", amountA);
+
 
                 // Execute the second swap using the output from the first
                 const amounts2 = await dex2.methods.swapA(amountA).call({ from: primary_trader });
                 await dex2.methods.swapA(amountA).send({ from: primary_trader });
                 const finalAmountB = Number(amounts2[0]);
-                console.log(`Final amount B after dex2 swap: ${finalAmountB}`);
+
+                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountB/decimals}  ` );
+                console.log(`profit: ${(finalAmountB - tradeAmount)/decimals}  profit per token:${(finalAmountB - tradeAmount)/ tradeAmount}  ` );
+
                 }
 
-                else if(direction = 2)
+                else if(direction == 2)
 
                 {
 
@@ -221,13 +228,14 @@ async function interactWithArbit() {
                 const amounts1 = await dex2.methods.swapB(tradeAmount).call({ from: primary_trader });
                 await dex2.methods.swapB(tradeAmount).send({ from: primary_trader });
                 const amountA = Number(amounts1[0]);
-                console.log("Swap on dex2 successful. Received TokenA amount:", amountA);
 
                 // Execute the second swap using the output from the first
                 const amounts2 = await dex1.methods.swapA(amountA).call({ from: primary_trader });
                 dex1.methods.swapA(amountA).send({ from: primary_trader });
                 const finalAmountB = Number(amounts2[0]);
-                console.log(`Final amount B after dex1 swap: ${finalAmountB}`);
+
+                console.log(`Token A traded: ${tradeAmount/decimals}  Token A received:${finalAmountB/decimals}  ` );
+                console.log(`profit: ${(finalAmountB - tradeAmount)/decimals}  profit per token:${(finalAmountB- tradeAmount)/ tradeAmount}  ` );
 
                 }
 
@@ -237,7 +245,6 @@ async function interactWithArbit() {
             }
             
         }
-
 
         console.log("finished");
 
