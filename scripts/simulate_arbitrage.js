@@ -104,98 +104,138 @@ async function interactWithArbit() {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        // Initial Liquidity
         await dex1.methods.addLiquidity(200 * decimals, 100 * decimals).send({from: lpAccounts[2]});
         await dex2.methods.addLiquidity(300 * decimals, 100 * decimals).send({from: lpAccounts[3]});
 
 
-        value = await arbit.methods.checkOpportunityBAB(100*decimals,4*decimals).call({from: traderAccounts[0]});
-        console.log("BAB:")
-        console.log(value[0],value[1]/decimals);
-
-        value = await arbit.methods.checkOpportunityABA(100*decimals,4*decimals).call({from: traderAccounts[0]});
-        console.log("ABA:")
-        console.log(value[0],value[1]/decimals);
-
-
-        // 1. Fix threshold
-        // 2. Do the actual swap based on direction
-        // 3. Put it in the loop to do trades until profit < threshold 
-        const thresh = 1 * decimals;  
+        // Parameter
+        const thresh = 2 * decimals;  
+        const max_trades = 20;        
+        
+        
         let continueTrading = true;
         let cnt = 0;
+        const primary_trader = traderAccounts[0];
 
         while (continueTrading) {
             cnt++;
+
             console.log(`\niter: ${cnt}`)
-            if (cnt == 10)
-                break
-            let resultABA = await arbit.methods.checkOpportunityABA(100 * decimals, thresh).call({ from: traderAccounts[0] });
-            let resultBAB = await arbit.methods.checkOpportunityBAB(100 * decimals, thresh).call({ from: traderAccounts[0] });
-
-            let direction, tradeAmount;
-            
-            if (resultABA[0] != 0 && resultABA[1] > 0) {
-                direction = "ABA";
-                tradeAmount = resultABA[1];
-
-            } else if (resultBAB[0] != 0 && resultBAB[1] > 0) {
-                direction = "BAB";
-                tradeAmount = resultBAB[1];
-            } else {
-                console.log("No profitable arbitrage opportunity available.");
+            if (cnt == max_trades)
                 break;
-            }
-            // tradeAmount = tradeAmount / decimals;
-            console.log(`executing ${direction} trade for amount:`, tradeAmount);
 
-            // const account = traderAccounts[0];
-            if (direction === "ABA") {
+            let result, type_of_trade, balanceA, balanceB;
+            balanceA = await tokenA.methods.balanceOf(primary_trader).call()
+            balanceB = await tokenB.methods.balanceOf(primary_trader).call()
+
+            if(tokenA.methods.balanceOf(primary_trader).call() > tokenB.methods.balanceOf(primary_trader).call())
+            {
+                result = await arbit.methods.checkOpportunityABA(balanceA, thresh).call({ from: primary_trader });
+                type_of_trade = "ABA"
+                console.log ("ABA");
+
+            }
+            else 
+            {
+                result = await arbit.methods.checkOpportunityBAB(balanceB, thresh).call({ from: primary_trader });
+                type_of_trade = "BAB"
+                console.log ("BAB");
+                
+            }
+
+            let direction = result[0];
+            let tradeAmount = result[1];
+
+            if( direction ==0)
+                {
+                    console.log("Profit is below threshold. Exiting loop.");
+                    break;
+                }
+ 
+            if (type_of_trade === "ABA") {
+
                 try {
+                if(direction == 1){
                 // Execute the first swap
-                const amounts1 = await dex1.methods.swapA(tradeAmount).call({ from: traderAccounts[0] });
-                await dex1.methods.swapA(tradeAmount).send({ from: traderAccounts[0] });
+                const amounts1 = await dex1.methods.swapA(tradeAmount).call({ from: primary_trader });
+                await dex1.methods.swapA(tradeAmount).send({ from: primary_trader });
                 
                 const amountB = Number(amounts1[0]);
                 console.log("Swap on dex1 successful. Received TokenB amount:", amountB);
 
                 // Execute the second swap using the output from the first
-                const amounts2 = await dex2.methods.swapB(amountB).call({ from: traderAccounts[0] });
-                await dex2.methods.swapB(amountB).send({ from: traderAccounts[0] });
+                const amounts2 = await dex2.methods.swapB(amountB).call({ from: primary_trader });
+                await dex2.methods.swapB(amountB).send({ from: primary_trader});
 
                 const finalAmountA = Number(amounts2[0]);
                 console.log(`Final amount A after dex2 swap: ${finalAmountA}`);
-                } catch (e) {
-                console.error("Swap chain failed:", e.message);
-                }             
+                }
 
+                else if(direction == 2)
+                {
+                    // Execute the first swap
+                const amounts1 = await dex2.methods.swapA(tradeAmount).call({ from: primary_trader });
+                await dex2.methods.swapA(tradeAmount).send({ from: primary_trader });
                 
+                const amountB = Number(amounts1[0]);
+                console.log("Swap on dex2 successful. Received TokenB amount:", amountB);
 
-            } else if (direction === "BAB") {
+                // Execute the second swap using the output from the first
+                const amounts2 = await dex1.methods.swapB(amountB).call({ from: primary_trader });
+                await dex1.methods.swapB(amountB).send({ from: primary_trader });
+
+                const finalAmountA = Number(amounts2[0]);
+                console.log(`Final amount A after dex1 swap: ${finalAmountA}`);
+                }
+
+
+                }
+                catch (e) {
+                console.error("Swap chain failed:", e.message);
+                }              
+                
+            } else if (type_of_trade === "BAB") {
                 try {
+
+                if(direction = 1)
+                {
                 // Execute the first swap
-                const amounts1 = await dex1.methods.swapB(tradeAmount).call({ from: traderAccounts[0] });
+                const amounts1 = await dex1.methods.swapB(tradeAmount).call({ from: primary_trader });
+                await dex1.methods.swapB(tradeAmount).send({ from: primary_trader });
                 const amountA = Number(amounts1[0]);
                 console.log("Swap on dex1 successful. Received TokenA amount:", amountA);
 
                 // Execute the second swap using the output from the first
-                const amounts2 = await dex2.methods.swapA(amountA).call({ from: traderAccounts[0] });
+                const amounts2 = await dex2.methods.swapA(amountA).call({ from: primary_trader });
+                await dex2.methods.swapA(amountA).send({ from: primary_trader });
                 const finalAmountB = Number(amounts2[0]);
                 console.log(`Final amount B after dex2 swap: ${finalAmountB}`);
+                }
+
+                else if(direction = 2)
+
+                {
+
+                    // Execute the first swap
+                const amounts1 = await dex2.methods.swapB(tradeAmount).call({ from: primary_trader });
+                await dex2.methods.swapB(tradeAmount).send({ from: primary_trader });
+                const amountA = Number(amounts1[0]);
+                console.log("Swap on dex2 successful. Received TokenA amount:", amountA);
+
+                // Execute the second swap using the output from the first
+                const amounts2 = await dex1.methods.swapA(amountA).call({ from: primary_trader });
+                dex1.methods.swapA(amountA).send({ from: primary_trader });
+                const finalAmountB = Number(amounts2[0]);
+                console.log(`Final amount B after dex1 swap: ${finalAmountB}`);
+
+                }
+
                 } catch (e) {
                 console.error("Swap chain failed:", e.message);
                 }
             }
             
-            try{
-                let newOpportunity = await arbit.methods.checkOpportunityABA(100 * decimals, thresh).call({ from: traderAccounts[0] });
-                if (newOpportunity[0] == 0) {
-                    console.log("Profit is below threshold. Exiting loop.");
-                    continueTrading = false;
-                }
-            }
-            catch (e) {
-                console.error("newOpp failed, ", e.message)
-            }
         }
 
 
